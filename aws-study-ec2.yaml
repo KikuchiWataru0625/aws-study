@@ -4,6 +4,8 @@ Description: "RaiseTech-EC2-creation"
 Parameters:
   myip: 
     Type: String
+    AllowedPattern: ^(25[0-5]|2[0-4]\d|1\d\d|[1-9]\d|\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]\d|\d)){3}/32$
+    ConstraintDescription: "Must be a valid IP CIDR range of the form x.x.x.x/x"
 
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access
