@@ -1,0 +1,147 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: RaiseTech-EC2-creation
+
+Resources:
+  RaiseTechVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: aws-study-vpc
+          
+  RaisetechIGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: aws-study-igw
+  
+  RaiseTechAttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref RaiseTechVPC
+      InternetGatewayId: !Ref RaisetechIGW
+
+  RaiseTechPublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: "ap-northeast-1a"
+      VpcId: !Ref RaiseTechVPC
+      CidrBlock: 10.0.0.0/20
+      Tags:
+        - Key: Name
+          Value: aws-study-pubsub1
+
+  RaiseTechPublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: "ap-northeast-1c"
+      VpcId: !Ref RaiseTechVPC
+      CidrBlock: 10.0.16.0/20
+      Tags:
+        - Key: Name
+          Value: aws-study-pubsub2
+
+  RaiseTechPrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: "ap-northeast-1a"
+      VpcId: !Ref RaiseTechVPC
+      CidrBlock: 10.0.128.0/20
+      Tags:
+        - Key: Name
+          Value: aws-study-prisub1
+
+  RaiseTechPrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: "ap-northeast-1c"
+      VpcId: !Ref RaiseTechVPC
+      CidrBlock: 10.0.144.0/20
+      Tags:
+        - Key: Name
+          Value: aws-study-prisub2
+
+  RaiseTechPublicRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref RaiseTechVPC
+      Tags:
+        - Key: keyname
+          Value: aws-study-pubrt1
+
+  RaiseTechPublicRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref RaiseTechVPC
+      Tags:
+        - Key: keyname
+          Value: aws-study-pubrt2
+
+  RaiseTechPrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref RaiseTechVPC
+      Tags:
+        - Key: keyname
+          Value: aws-study-prirt1
+
+  RaiseTechPrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref RaiseTechVPC
+      Tags:
+        - Key: keyname
+          Value: aws-study-prirt2
+
+  RaiseTechPublicRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref RaiseTechPublicRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref RaisetechIGW
+
+  RaiseTechPublicRoute2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref RaiseTechPublicRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref RaisetechIGW
+
+  RaiseTechPublicRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref RaiseTechPublicSubnet1
+      RouteTableId: !Ref RaiseTechPublicRouteTable1
+
+  RaiseTechPublicRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref RaiseTechPublicSubnet2
+      RouteTableId: !Ref RaiseTechPublicRouteTable2
+
+  RaiseTechPrivateRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref RaiseTechPrivateSubnet1
+      RouteTableId: !Ref RaiseTechPrivateRouteTable1
+
+  RaiseTechPrivateRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref RaiseTechPrivateSubnet2
+      RouteTableId: !Ref RaiseTechPrivateRouteTable2
+
+Outputs:
+  RaiseTechVPCID:
+    Value: !Ref RaiseTechVPC
+    Export:
+      Name: !Sub RaiseTechVPCID
+
+  RaiseTechPublicSubnet1ID:
+    Value: !Ref RaiseTechPublicSubnet1
+    Export:
+      Name: !Sub RaiseTechPublicSubnet1ID

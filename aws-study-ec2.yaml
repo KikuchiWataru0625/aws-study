@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "RaiseTech-EC2-creation"
+
+Parameters:
+  myip: 
+    Type: String
+    AllowedPattern: ^(25[0-5]|2[0-4]\d|1\d\d|[1-9]\d|\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]\d|\d)){3}/32$
+    ConstraintDescription: "Must be a valid IP CIDR range of the form x.x.x.x/x"
+
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access
+    Type: AWS::EC2::KeyPair::KeyName
+
+
+Resources:
+  RaiseTechEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-070d2b24928913a49
+      KeyName: !Ref KeyName
+      InstanceType: t3.micro
+      NetworkInterfaces:
+        - DeviceIndex: "0"
+          SubnetId: !ImportValue RaiseTechPublicSubnet1ID
+          AssociatePublicIpAddress: true
+          DeleteOnTermination: true
+          GroupSet:
+            - !Ref RaiseTechEC2SG
+
+  RaiseTechEC2SG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH and HTTP
+      VpcId: !ImportValue RaiseTechVPCID
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref myip
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          
+
+  
