@@ -11,6 +11,9 @@ Parameters:
     Description: Name of an existing EC2 KeyPair to enable SSH access
     Type: AWS::EC2::KeyPair::KeyName
 
+  RDSpassword:
+    Type: String 
+
 
 Resources:
   RaiseTechVPC:
@@ -205,7 +208,7 @@ Resources:
       EngineVersion: 8.4.7 
       LicenseModel: general-public-license
       MasterUsername: root
-      MasterUserPassword: RaiseTechroot
+      MasterUserPassword: !Ref RDSpassword
       MultiAZ: false
       Port: 3306
       PreferredBackupWindow: 03:00-04:00
@@ -251,7 +254,7 @@ Resources:
     Properties:
       Scheme: internet-facing
       SecurityGroups:
-        - !Ref RaiseTechEC2SG
+        - !Ref RaiseTechELBSG
       Subnets:
         - !Ref RaiseTechPublicSubnet1
         - !Ref RaiseTechPublicSubnet2
@@ -259,6 +262,22 @@ Resources:
         - Key: Name
           Value: aws-study-elb
 
+  RaiseTechELBSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow HTTP
+      VpcId: !Ref RaiseTechVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: aws-study-elb-sg
 
   RaiseTechTargetGroup:
     Type: "AWS::ElasticLoadBalancingV2::TargetGroup"
@@ -266,7 +285,7 @@ Resources:
       Name: Raise-Tech-Target-Group
       VpcId: !Ref RaiseTechVPC
       Protocol: HTTP
-      Port: 80
+      Port: 8080
       Targets: 
       - Id: !Ref RaiseTechEC2
         Port: 8080
