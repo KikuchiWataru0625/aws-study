@@ -1,0 +1,315 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: aws-study-27
+
+Parameters:
+  myip: 
+    Type: String
+    AllowedPattern: ^(25[0-5]|2[0-4]\d|1\d\d|[1-9]\d|\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]\d|\d)){3}/32$
+    ConstraintDescription: "Must be a valid IP CIDR range of the form x.x.x.x/32"
+
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access
+    Type: AWS::EC2::KeyPair::KeyName
+
+  RDSpassword:
+    Type: String 
+    NoEcho: true
+    
+
+Resources:
+  RaiseTechVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: aws-study-vpc
+          
+  RaisetechIGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: aws-study-igw
+  
+  RaiseTechAttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref RaiseTechVPC
+      InternetGatewayId: !Ref RaisetechIGW
+
+  RaiseTechPublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: "ap-northeast-1a"
+      VpcId: !Ref RaiseTechVPC
+      CidrBlock: 10.0.0.0/20
+      Tags:
+        - Key: Name
+          Value: aws-study-pubsub1
+
+  RaiseTechPublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: "ap-northeast-1c"
+      VpcId: !Ref RaiseTechVPC
+      CidrBlock: 10.0.16.0/20
+      Tags:
+        - Key: Name
+          Value: aws-study-pubsub2
+
+  RaiseTechPrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: "ap-northeast-1a"
+      VpcId: !Ref RaiseTechVPC
+      CidrBlock: 10.0.128.0/20
+      Tags:
+        - Key: Name
+          Value: aws-study-prisub1
+
+  RaiseTechPrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: "ap-northeast-1c"
+      VpcId: !Ref RaiseTechVPC
+      CidrBlock: 10.0.144.0/20
+      Tags:
+        - Key: Name
+          Value: aws-study-prisub2
+
+  RaiseTechPublicRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref RaiseTechVPC
+      Tags:
+        - Key: keyname
+          Value: aws-study-pubrt1
+
+  RaiseTechPublicRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref RaiseTechVPC
+      Tags:
+        - Key: keyname
+          Value: aws-study-pubrt2
+
+  RaiseTechPrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref RaiseTechVPC
+      Tags:
+        - Key: keyname
+          Value: aws-study-prirt1
+
+  RaiseTechPrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref RaiseTechVPC
+      Tags:
+        - Key: keyname
+          Value: aws-study-prirt2
+
+  RaiseTechPublicRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref RaiseTechPublicRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref RaisetechIGW
+
+  RaiseTechPublicRoute2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref RaiseTechPublicRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref RaisetechIGW
+
+  RaiseTechPublicRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref RaiseTechPublicSubnet1
+      RouteTableId: !Ref RaiseTechPublicRouteTable1
+
+  RaiseTechPublicRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref RaiseTechPublicSubnet2
+      RouteTableId: !Ref RaiseTechPublicRouteTable2
+
+  RaiseTechPrivateRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref RaiseTechPrivateSubnet1
+      RouteTableId: !Ref RaiseTechPrivateRouteTable1
+
+  RaiseTechPrivateRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref RaiseTechPrivateSubnet2
+      RouteTableId: !Ref RaiseTechPrivateRouteTable2
+
+
+  RaiseTechEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-070d2b24928913a49
+      KeyName: !Ref KeyName
+      InstanceType: t3.micro
+      NetworkInterfaces:
+        - DeviceIndex: "0"
+          SubnetId: !Ref RaiseTechPublicSubnet1
+          AssociatePublicIpAddress: true
+          DeleteOnTermination: true
+          GroupSet:
+            - !Ref RaiseTechEC2SG
+      Tags:
+        - Key: Name
+          Value: aws-study-ec2
+
+  RaiseTechEC2SG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH and HTTP
+      VpcId: !Ref RaiseTechVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref myip
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref RaiseTechELBSG
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          SourceSecurityGroupId: !Ref RaiseTechELBSG
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: aws-study-ec2-sg
+
+  RaiseTechRDS:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: 20
+      DBInstanceClass: db.t4g.micro
+      AllowMajorVersionUpgrade: false
+      AutoMinorVersionUpgrade: true
+      AvailabilityZone: ap-northeast-1a
+      BackupRetentionPeriod: 1
+      DBInstanceIdentifier: RaiseTechRDS
+      DBName: RaiseTechDB
+      DBSubnetGroupName: !Ref RaiseTechdbsubnetgroup
+      Engine: mysql
+      EngineVersion: 8.4.7 
+      LicenseModel: general-public-license
+      MasterUsername: root
+      MasterUserPassword: !Ref RDSpassword
+      MultiAZ: false
+      Port: 3306
+      PreferredBackupWindow: 03:00-04:00
+      PreferredMaintenanceWindow: sun:19:00-sun:20:00
+      PubliclyAccessible: false
+      StorageEncrypted: false
+      StorageType: gp2
+      VPCSecurityGroups:
+        - !Ref RaiseTechDBSecurityGroup
+      Tags:
+        - Key: Name
+          Value: aws-study-rds
+
+  RaiseTechdbsubnetgroup:
+      Type: AWS::RDS::DBSubnetGroup
+      Properties: 
+        DBSubnetGroupDescription: "rdssubnetgroup"
+        SubnetIds:  
+          - !Ref RaiseTechPrivateSubnet1
+          - !Ref RaiseTechPrivateSubnet2
+
+  RaiseTechDBSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties: 
+        GroupDescription: rds-securitygroup
+        SecurityGroupEgress: 
+          - IpProtocol: -1
+            FromPort: -1
+            ToPort: -1
+            CidrIp: 0.0.0.0/0
+        SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: 3306
+            ToPort: 3306
+            SourceSecurityGroupId: !Ref RaiseTechEC2SG
+        VpcId: !Ref RaiseTechVPC
+        Tags:
+        - Key: Name
+          Value: aws-study-rds-sg
+
+  RaiseTechELB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref RaiseTechELBSG
+      Subnets:
+        - !Ref RaiseTechPublicSubnet1
+        - !Ref RaiseTechPublicSubnet2
+      Tags:
+        - Key: Name
+          Value: aws-study-elb
+
+  RaiseTechELBSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow HTTP
+      VpcId: !Ref RaiseTechVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: aws-study-elb-sg
+
+  RaiseTechTargetGroup:
+    Type: "AWS::ElasticLoadBalancingV2::TargetGroup"
+    Properties:
+      Name: Raise-Tech-Target-Group
+      VpcId: !Ref RaiseTechVPC
+      Protocol: HTTP
+      Port: 8080
+      Targets: 
+      - Id: !Ref RaiseTechEC2
+        Port: 8080
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: '/'
+      HealthCheckPort: 'traffic-port'
+      HealthCheckProtocol: 'HTTP'
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      Matcher: 
+        HttpCode: 200
+      Tags:
+        - Key: Name
+          Value: aws-study-elb-tg
+
+  RaiseTechListener:
+    Type: "AWS::ElasticLoadBalancingV2::Listener"
+    Properties:
+      LoadBalancerArn: !Ref RaiseTechELB
+      Port: 80
+      Protocol: HTTP
+      DefaultActions: 
+      - TargetGroupArn: !Ref RaiseTechTargetGroup
+        Type: forward
