@@ -360,37 +360,11 @@ Resources:
           Value: aws-waf-logs-alb-alc
 
   WAFLogConfig:
-    DependsOn:
-      - WAFToCloudWatchLogsPolicy
     Type: AWS::WAFv2::LoggingConfiguration
     Properties:
       ResourceArn: !GetAtt RaiseTechWebACL.Arn
       LogDestinationConfigs:
         - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${WAFLogGroup}
-
-  WAFToCloudWatchLogsPolicy:
-    Type: AWS::Logs::ResourcePolicy
-    Properties:
-      PolicyName: WAFToCloudWatchLogsPolicy
-      PolicyDocument: !Sub |
-        {
-          "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Sid": "AllowWAFToLog",
-              "Effect": "Allow",
-              "Principal": {
-                "Service": "delivery.logs.amazonaws.com"
-              },
-              "Action": [
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-              ],
-              "Resource": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${WAFLogGroup}:*"
-            }
-          ]
-        }
-
 
   CPUAlarm:
     Type: AWS::CloudWatch::Alarm
